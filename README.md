@@ -4,7 +4,7 @@
 - We are here to practice integration testsing using HTTP stubbing. 
 - We are going to use [MockWebServer][mockwebserver] to simulate a HTTP server.
 - We are going to use [JUnit][junit] to perform assertions.
-- We are going to practice pair programming.
+- We are going to practice pair programming. 
 
 ---
 
