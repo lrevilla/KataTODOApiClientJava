@@ -16,6 +16,11 @@
 package com.karumi.todoapiclient;
 
 import com.karumi.todoapiclient.dto.TaskDto;
+import com.karumi.todoapiclient.exception.ItemNotFoundException;
+import com.karumi.todoapiclient.exception.TodoApiClientException;
+import com.karumi.todoapiclient.exception.UnknownErrorException;
+
+import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,43 +30,44 @@ import static org.junit.Assert.assertFalse;
 
 public class TodoApiClientTest extends MockWebServerTest {
 
-  private TodoApiClient apiClient;
+    private TodoApiClient apiClient;
 
-  @Before public void setUp() throws Exception {
-    super.setUp();
-    String mockWebServerEndpoint = getBaseEndpoint();
-    apiClient = new TodoApiClient(mockWebServerEndpoint);
-  }
+    @Before public void setUp() throws Exception {
+        super.setUp();
+        String mockWebServerEndpoint = getBaseEndpoint();
+        apiClient = new TodoApiClient(mockWebServerEndpoint);
+    }
 
-  @Test public void sendsAcceptAndContentTypeHeaders() throws Exception {
-    enqueueMockResponse();
+    @Test
+    public void shouldReturnTheTasksWhenTheResponseIsParsed() throws IOException, TodoApiClientException {
+        enqueueMockResponse(200, "getTasksResponse.json");
 
-    apiClient.getAllTasks();
+        List<TaskDto> tasks = apiClient.getAllTasks();
 
-    assertRequestContainsHeader("Accept", "application/json");
-  }
+        assertEquals(200, tasks.size());
+        assertTaskContainsExpectedValues(tasks.get(0));
+    }
 
-  @Test public void sendsGetAllTaskRequestToTheCorrectEndpoint() throws Exception {
-    enqueueMockResponse();
+    @Test
+    public void shouldReturnTheTasksWhenThePathAndVerbAreValid() throws IOException, TodoApiClientException, InterruptedException {
+        enqueueMockResponse();
 
-    apiClient.getAllTasks();
+        apiClient.getAllTasks();
 
-    assertGetRequestSentTo("/todos");
-  }
+        assertGetRequestSentTo("/todos");
+    }
 
-  @Test public void parsesTasksProperlyGettingAllTheTasks() throws Exception {
-    enqueueMockResponse(200, "getTasksResponse.json");
+    @Test(expected = UnknownErrorException.class)
+    public void shouldFailWhenWhenServerReturnsFailure() throws IOException, TodoApiClientException {
+        enqueueMockResponse(418);
 
-    List<TaskDto> tasks = apiClient.getAllTasks();
+        apiClient.getAllTasks();
+    }
 
-    assertEquals(tasks.size(), 200);
-    assertTaskContainsExpectedValues(tasks.get(0));
-  }
-
-  private void assertTaskContainsExpectedValues(TaskDto task) {
-    assertEquals(task.getId(), "1");
-    assertEquals(task.getUserId(), "1");
-    assertEquals(task.getTitle(), "delectus aut autem");
-    assertFalse(task.isFinished());
-  }
+    private void assertTaskContainsExpectedValues(TaskDto task) {
+        assertEquals(task.getId(), "1");
+        assertEquals(task.getUserId(), "1");
+        assertEquals(task.getTitle(), "delectus aut autem");
+        assertFalse(task.isFinished());
+    }
 }
