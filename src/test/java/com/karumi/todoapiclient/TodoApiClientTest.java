@@ -20,7 +20,6 @@ import com.karumi.todoapiclient.exception.ItemNotFoundException;
 import com.karumi.todoapiclient.exception.TodoApiClientException;
 import com.karumi.todoapiclient.exception.UnknownErrorException;
 
-import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,44 +29,76 @@ import static org.junit.Assert.assertFalse;
 
 public class TodoApiClientTest extends MockWebServerTest {
 
-    private TodoApiClient apiClient;
+  private TodoApiClient apiClient;
 
-    @Before public void setUp() throws Exception {
-        super.setUp();
-        String mockWebServerEndpoint = getBaseEndpoint();
-        apiClient = new TodoApiClient(mockWebServerEndpoint);
-    }
+  @Before public void setUp() throws Exception {
+    super.setUp();
+    String mockWebServerEndpoint = getBaseEndpoint();
+    apiClient = new TodoApiClient(mockWebServerEndpoint);
+  }
 
-    @Test
-    public void shouldReturnTheTasksWhenTheResponseIsParsed() throws IOException, TodoApiClientException {
-        enqueueMockResponse(200, "getTasksResponse.json");
+  @Test
+  public void shouldReturnTheTasksWhenTheResponseIsParsed() throws Exception {
+    enqueueMockResponse(200, "getTasksResponse.json");
 
-        List<TaskDto> tasks = apiClient.getAllTasks();
+    List<TaskDto> tasks = apiClient.getAllTasks();
 
-        assertEquals(200, tasks.size());
-        assertTaskContainsExpectedValues(tasks.get(0));
-    }
+    assertEquals(200, tasks.size());
+    assertTaskContainsExpectedValues(tasks.get(0));
+  }
 
-    @Test
-    public void shouldReturnTheTasksWhenThePathAndVerbAreValid() throws IOException, TodoApiClientException, InterruptedException {
-        enqueueMockResponse();
+  @Test
+  public void shouldReturnTheTasksWhenThePathAndVerbAreValid() throws Exception {
+    enqueueMockResponse();
 
-        apiClient.getAllTasks();
+    apiClient.getAllTasks();
 
-        assertGetRequestSentTo("/todos");
-    }
+    assertGetRequestSentTo("/todos");
+  }
 
-    @Test(expected = UnknownErrorException.class)
-    public void shouldFailWhenWhenServerReturnsFailure() throws IOException, TodoApiClientException {
-        enqueueMockResponse(418);
+  @Test(expected = UnknownErrorException.class)
+  public void shouldFailWhenWhenServerReturnsFailure() throws Exception {
+    enqueueMockResponse(418);
 
-        apiClient.getAllTasks();
-    }
+    apiClient.getAllTasks();
+  }
 
-    private void assertTaskContainsExpectedValues(TaskDto task) {
-        assertEquals(task.getId(), "1");
-        assertEquals(task.getUserId(), "1");
-        assertEquals(task.getTitle(), "delectus aut autem");
-        assertFalse(task.isFinished());
-    }
+  @Test
+  public void shouldCallValidPathWhenGettingDetails() throws Exception {
+    enqueueMockResponse();
+
+    apiClient.getTaskById("1");
+
+    assertGetRequestSentTo("/todos/1");
+  }
+
+  @Test(expected = ItemNotFoundException.class)
+  public void shouldFailWhenCallingNonExistingPath() throws Exception {
+    enqueueMockResponse(404);
+
+    apiClient.getTaskById("1000");
+  }
+
+  @Test(expected = TodoApiClientException.class)
+  public void shouldFailWhenServerFails() throws Exception {
+    enqueueMockResponse(500);
+
+    apiClient.getTaskById("1000");
+  }
+
+  @Test
+  public void shouldSuccessWhenResponseIsValid() throws Exception {
+    enqueueMockResponse(200, "getTaskByIdResponse.json");
+
+    TaskDto taskResponse = apiClient.getTaskById("1");
+
+    assertTaskContainsExpectedValues(taskResponse);
+  }
+
+  private void assertTaskContainsExpectedValues(TaskDto task) {
+    assertEquals(task.getId(), "1");
+    assertEquals(task.getUserId(), "1");
+    assertEquals(task.getTitle(), "delectus aut autem");
+    assertFalse(task.isFinished());
+  }
 }
