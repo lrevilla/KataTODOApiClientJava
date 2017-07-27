@@ -37,6 +37,8 @@ public class TodoApiClientTest extends MockWebServerTest {
     apiClient = new TodoApiClient(mockWebServerEndpoint);
   }
 
+  // GET Tests
+
   @Test
   public void shouldReturnTheTasksWhenTheResponseIsParsed() throws Exception {
     enqueueMockResponse(200, "getTasksResponse.json");
@@ -95,10 +97,108 @@ public class TodoApiClientTest extends MockWebServerTest {
     assertTaskContainsExpectedValues(taskResponse);
   }
 
+  // POST tests
+
+  @Test
+  public void shouldUseValidPathWhenCreatingATask() throws Exception {
+    enqueueMockResponse(201);
+    TaskDto task = new TaskDto("201", "2", "ajsdhajksd", false);
+
+    apiClient.addTask(task);
+
+    assertPostRequestSentTo("/todos");
+  }
+
+  @Test
+  public void shouldReturnBodyWhenCreatingATask() throws Exception {
+    enqueueMockResponse(201, "addTaskRequest.json");
+    TaskDto task = new TaskDto("1", "2", "Finish this kata", false);
+
+    apiClient.addTask(task);
+
+    assertRequestBodyEquals("addTaskRequest.json");
+  }
+
+  @Test(expected = UnknownErrorException.class)
+  public void shouldFailWhenServerReturnsUnexpectedValue() throws Exception {
+    enqueueMockResponse(418);
+
+    apiClient.addTask(new TaskDto("-1", "", "", false));
+  }
+
+  @Test(expected = TodoApiClientException.class)
+  public void shouldFailWhenServerHasAnError() throws Exception {
+    enqueueMockResponse(500);
+
+    apiClient.addTask(new TaskDto("-1", "", "", false));
+  }
+
+  // PUT methods
+
+  @Test
+  public void shouldUseValidPathWhenUpdatingATask() throws Exception {
+    enqueueMockResponse(201);
+    TaskDto task = new TaskDto("201", "2", "LOL", true);
+
+    apiClient.updateTaskById(task);
+
+    assertPutRequestSentTo("/todos/201");
+  }
+
+  @Test
+  public void shouldReturnBodyWhenUpdatingATask() throws Exception {
+    enqueueMockResponse(200, "updateTaskRequest.json");
+    TaskDto task = new TaskDto("1", "2", "Finish this kata", false);
+
+    apiClient.updateTaskById(task);
+
+    assertRequestBodyEquals("updateTaskRequest.json");
+  }
+
+  @Test(expected = UnknownErrorException.class)
+  public void shouldFailWhenUpdatingServerReturnsUnexpectedValue() throws Exception {
+    enqueueMockResponse(418);
+
+    apiClient.updateTaskById(new TaskDto("-1", "", "", false));
+  }
+
+  @Test(expected = TodoApiClientException.class)
+  public void shouldFailWhenUpdatingServerHasAnError() throws Exception {
+    enqueueMockResponse(500);
+
+    apiClient.updateTaskById(new TaskDto("-1", "", "", false));
+  }
+
+  // DELETE Tests
+
+  @Test
+  public void shouldUseValidPathWhenDeletingATask() throws Exception {
+    enqueueMockResponse(200);
+
+    apiClient.deleteTaskById("2");
+
+    assertDeleteRequestSentTo("/todos/2");
+  }
+
+  @Test(expected = ItemNotFoundException.class)
+  public void shouldFailWhenDeletingServerReturnsUnexpectedValue() throws Exception {
+    enqueueMockResponse(404);
+
+    apiClient.deleteTaskById("2");
+  }
+
+  @Test(expected = TodoApiClientException.class)
+  public void shouldFailWhenDeletingServerHasAnError() throws Exception {
+    enqueueMockResponse(500);
+
+    apiClient.deleteTaskById("2");
+  }
+
   private void assertTaskContainsExpectedValues(TaskDto task) {
     assertEquals(task.getId(), "1");
     assertEquals(task.getUserId(), "1");
     assertEquals(task.getTitle(), "delectus aut autem");
     assertFalse(task.isFinished());
   }
+
 }
